@@ -8,8 +8,12 @@ embed-resources: true
 
 ```{r}
 #| label: pacakges
+#| message: false
+#| results: false
 
 library(tidyverse)
+library(knitr)
+library(kableExtra)
 ```
 
 For this week's lab, we will be revisiting questions from previous lab
@@ -44,7 +48,19 @@ each variable, with the datatype of that variable immediately below it's name.
 ```{r}
 #| label: map-data-types-of-surveys
 
+maptype <- function(df) {
+  tibble(variable = names(df), 
+         type = map_chr(df, class))
+}
 
+surveys_type <- maptype(surveys)
+
+surveys_type <- surveys_type |>
+  pivot_wider(names_from = variable,
+              values_from = type)
+
+surveys_type |>
+  kable()
 ```
 
 ## Lab 3
@@ -62,7 +78,20 @@ list output back into a data frame.
 ```{r}
 #| label: map-to-mutate-columns
 
+map_column_factor <- function(df, variables) {
+  colfact <- map_at(df, variables, as.factor)
+  bind_cols(colfact)
+}
 
+colfacts <- c("teacher_id", "weekday", "academic_degree", "seniority", "gender")
+
+fct_evals <- map_column_factor(evals, colfacts)
+
+fct_evals_type <- maptype(fct_evals)
+
+fct_evals_type |>
+  kable()
+# fyi multiple rows per professor
 ```
 
 Next up, we're going revisit Question 7 which asked:
@@ -88,7 +117,25 @@ I'm using the `sen_level` classification from Challenge 3
 ```{r}
 #| label: double-pivot-for-summary-table
 
+evals_summary <- evals |>
+  distinct(teacher_id, .keep_all = TRUE) |>
+  mutate(sen_level = if_else(seniority <= 4, "Junior (4 years or less)", 
+                            "Senior (more than 4 years)")
+         ) |>
+  summarise(
+    Female = sum(sex == "female"),
+    Male = sum(sex == "male"),
+    `Junior (4 years or less)` = sum(sen_level == "Junior (4 years or less)"),
+    `Senior (more than 4 years)` = sum(sen_level == "Senior (more than 4 years)"),
+    `No Degree` = sum(academic_degree == "no_dgr"),
+    Masters = sum(academic_degree == "ma"),
+    Doctorate = sum(academic_degree == "dr"),
+    Professor = sum(academic_degree == "prof")
+  )
 
+evals_summary |>
+  kable()
+  
 ```
 
 ::: {.callout-tip}
@@ -110,6 +157,18 @@ Question 1 asked you to use `across()` to make a table which summarized:
 
 ```{r}
 #| label: map-missing-values-of-fish
+
+missing_values_summary <- tibble(
+  `Variables` = names(fish),
+  `Missing Count` = map_int(fish, ~sum(is.na(.)))
+) |>
+  filter(`Missing Count` > 0)
+
+missing_values_summary |>
+  kable()
+
+```
+
 
 
 ```
